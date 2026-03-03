@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lineart Tool</title>
+<style>
+body { text-align:center; font-family:sans-serif; background:#111; color:white; }
+canvas { border:1px solid white; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>러프 → 선화 변환기</h2>
+<input type="file" id="upload">
+<br>
+<canvas id="canvas"></canvas>
+
+<script>
+const upload = document.getElementById("upload");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+upload.addEventListener("change", function(e){
+  const img = new Image();
+  img.src = URL.createObjectURL(e.target.files[0]);
+  img.onload = function(){
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img,0,0);
+
+    let imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    let data = imgData.data;
+
+    for(let i=0;i<data.length;i+=4){
+      let avg = (data[i]+data[i+1]+data[i+2])/3;
+      if(avg > 200){
+        data[i]=255;
+        data[i+1]=255;
+        data[i+2]=255;
+      }else{
+        data[i]=0;
+        data[i+1]=0;
+        data[i+2]=0;
+      }
+    }
+
+    ctx.putImageData(imgData,0,0);
+  }
+});
+</script>
+
+</body>
+</html>
