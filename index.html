@@ -1,7 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lineart Tool</title>
+<style>
+body { text-align:center; font-family:sans-serif; background:#111; color:white; }
+canvas { border:1px solid white; margin-top:10px; }
+input[type=range]{ width:300px; }
+</style>
+</head>
+<body>
+
+<h2>러프 정리 툴</h2>
+<input type="file" id="upload"><br><br>
+
+밝기: <input type="range" id="brightness" min="-100" max="100" value="0"><br>
+대비: <input type="range" id="contrast" min="0" max="300" value="150"><br>
+임계값: <input type="range" id="threshold" min="0" max="255" value="150"><br>
+
+<canvas id="canvas"></canvas>
+
 <script>
 const upload = document.getElementById("upload");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+const brightness = document.getElementById("brightness");
+const contrast = document.getElementById("contrast");
+const threshold = document.getElementById("threshold");
+
+let originalImage;
 
 upload.addEventListener("change", function(e){
   const img = new Image();
@@ -10,29 +38,41 @@ upload.addEventListener("change", function(e){
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img,0,0);
-
-    let imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    let data = imgData.data;
-
-    // 1. 흑백 변환
-    for(let i=0;i<data.length;i+=4){
-      let gray = (data[i]*0.3 + data[i+1]*0.59 + data[i+2]*0.11);
-      data[i] = data[i+1] = data[i+2] = gray;
-    }
-
-    ctx.putImageData(imgData,0,0);
-
-    // 2. 대비 강화
-    imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    data = imgData.data;
-
-    for(let i=0;i<data.length;i+=4){
-      let contrast = (data[i] - 128) * 2 + 128;
-      contrast = contrast > 200 ? 255 : contrast < 100 ? 0 : contrast;
-      data[i] = data[i+1] = data[i+2] = contrast;
-    }
-
-    ctx.putImageData(imgData,0,0);
+    originalImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+    applyEffect();
   }
 });
+
+brightness.oninput = contrast.oninput = threshold.oninput = applyEffect;
+
+function applyEffect(){
+  if(!originalImage) return;
+
+  let imgData = new ImageData(
+    new Uint8ClampedArray(originalImage.data),
+    originalImage.width,
+    originalImage.height
+  );
+
+  let data = imgData.data;
+  let b = parseInt(brightness.value);
+  let c = parseInt(contrast.value);
+  let t = parseInt(threshold.value);
+
+  for(let i=0;i<data.length;i+=4){
+    let gray = (data[i]*0.3 + data[i+1]*0.59 + data[i+2]*0.11);
+
+    gray += b;
+    gray = ((gray - 128) * (c/100)) + 128;
+
+    gray = gray > t ? 255 : 0;
+
+    data[i] = data[i+1] = data[i+2] = gray;
+  }
+
+  ctx.putImageData(imgData,0,0);
+}
 </script>
+
+</body>
+</html>
